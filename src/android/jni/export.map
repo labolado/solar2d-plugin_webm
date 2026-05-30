@@ -1,0 +1,9 @@
+# Only the Corona plugin entry point is exported; everything else (our C++,
+# libvpx/libwebm/opus, and the statically-linked libc++) is localized so it
+# can't clash with or be interposed by the engine's (older-NDK) libc++.
+{
+  global:
+    luaopen_plugin_webm;
+  local:
+    *;
+};

@@ -1,0 +1,172 @@
+# Builds the win32 plugin (plugin_webm.dll) fresh on a Windows runner, then
+# publishes it together with the already-committed platform binaries under
+# plugins/** via the official solar2d/directory-plugin-action.
+#
+# Why build win32 here instead of committing a prebuilt DLL: the plugin is
+# authored on macOS, so the Windows binary can't be produced locally. CI is the
+# only place it gets built — so it's built on every publish and injected into the
+# plugins/ tree the publish action consumes. The DLL is never committed.
+#
+# NOTE: the Windows build chain (Corona Native SDK install path, whether
+# OpenAL32.lib ships in the SDK, libvpx under MSYS2) is UNVERIFIED on a real
+# runner. The steps probe + fail loudly so the first few CI runs pinpoint what
+# needs tweaking. publish-release depends on build-win32, so a red Windows build
+# blocks the release (win32 is published *together* with the others, by design).
+
+name: publish
+
+# Release is cut only on the deliberate signals below (push to plugins/** etc.).
+# A manual "Run workflow" (workflow_dispatch) builds win32 only and skips the
+# publish job — so the unverified Windows build can be iterated without cutting
+# a release every time (publish-release is gated on the event type).
+on:
+  push:
+    paths:
+      - 'plugins/**'
+      - 'docs/**'
+  repository_dispatch:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Corona/Solar2D build whose Native SDK we build + link against. Matches the
+  # plugins/<YEAR.BUILD>/ folder so the ABI lines up. Bump together with that
+  # folder if you retarget a newer Solar2D build.
+  SOLAR2D_YEAR: '2025'
+  SOLAR2D_BUILD: '3720'
+  # The committed plugins folder for this build (plugins/<PLUGIN_BUILD>/...).
+  PLUGIN_BUILD: '2025.3720'
+
+jobs:
+  build-win32:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download + install Solar2D (Corona Native SDK)
+        shell: pwsh
+        run: |
+          $url = "https://github.com/coronalabs/corona/releases/download/$env:SOLAR2D_BUILD/Solar2D-Windows-$env:SOLAR2D_YEAR.$env:SOLAR2D_BUILD.msi"
+          Write-Host "Downloading $url"
+          curl.exe -L --fail -o solar2d.msi $url
+          if (-not (Test-Path solar2d.msi)) { throw "Solar2D MSI download failed" }
+          Write-Host "Installing silently..."
+          $p = Start-Process msiexec.exe -ArgumentList '/i','solar2d.msi','/qn','/norestart' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "msiexec failed with exit code $($p.ExitCode)" }
+
+      - name: Locate Native SDK and export CORONA_ROOT
+        shell: pwsh
+        run: |
+          # The .vcxproj references $(CORONA_ROOT)\Corona\win\lib and
+          # $(CORONA_ROOT)\Corona\shared\include, so CORONA_ROOT is the directory
+          # that *contains* the `Corona` folder. Find it by locating win\lib.
+          $roots = @('C:\Program Files (x86)','C:\Program Files')
+          $lib = Get-ChildItem $roots -Recurse -Directory -ErrorAction SilentlyContinue |
+                 Where-Object { $_.FullName -match '\\Corona\\win\\lib$' } |
+                 Select-Object -First 1
+          if (-not $lib) {
+            Write-Host "Could not find Corona\win\lib. Dumping install tree:"
+            Get-ChildItem 'C:\Program Files (x86)\Corona Labs' -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty FullName
+            throw "Corona Native SDK win\lib not found after install"
+          }
+          # ...\<ROOT>\Corona\win\lib  ->  <ROOT>
+          $root = $lib.Parent.Parent.Parent.FullName
+          Write-Host "CORONA_ROOT=$root"
+          "CORONA_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "win\lib contents:"
+          Get-ChildItem "$root\Corona\win\lib" | Select-Object -ExpandProperty Name
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          # Install to C:\msys64 so build_thrid_party_libs.ps1 finds bash there.
+          location: C:\
+          update: true
+          install: >-
+            make
+            perl
+            diffutils
+            nasm
+            yasm
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build third-party libs (opus, webm, vpx)
+        shell: pwsh
+        run: ./src/win32/build_thrid_party_libs.ps1
+
+      - name: Ensure OpenAL32.lib is on the linker path
+        shell: pwsh
+        run: |
+          # Plugin.vcxproj links OpenAL32.lib by bare name with
+          # AdditionalLibraryDirectories=third_party_libs, so put it there.
+          $tp = "src\win32\third_party_libs"
+          New-Item -ItemType Directory -Force -Path $tp | Out-Null
+          if (Test-Path "$tp\OpenAL32.lib") { Write-Host "already present"; exit 0 }
+          $oal = Get-ChildItem "$env:CORONA_ROOT" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
+                 Select-Object -First 1
+          if ($oal) {
+            Copy-Item $oal.FullName "$tp\OpenAL32.lib"
+            Write-Host "Copied OpenAL32.lib from SDK: $($oal.FullName)"
+            exit 0
+          }
+          Write-Host "OpenAL32.lib not in SDK; falling back to vcpkg (x86)"
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install openal-soft:x86-windows
+          $oal = Get-ChildItem "$env:VCPKG_INSTALLATION_ROOT\installed" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
+                 Select-Object -First 1
+          if (-not $oal) { throw "OpenAL32.lib not found in SDK or vcpkg" }
+          Copy-Item $oal.FullName "$tp\OpenAL32.lib"
+          Write-Host "Copied OpenAL32.lib from vcpkg: $($oal.FullName)"
+
+      - name: Build plugin_webm.dll (msbuild, Release/Win32)
+        shell: pwsh
+        run: msbuild src\win32\Plugin.sln /p:Configuration=Release /p:Platform=Win32 /m
+
+      - name: Stage win32-sim artifact
+        shell: pwsh
+        run: |
+          $dll = "src\win32\Release\plugin_webm.dll"
+          if (-not (Test-Path $dll)) { $dll = "src\win32\Win32\Release\plugin_webm.dll" }
+          if (-not (Test-Path $dll)) {
+            Write-Host "Searching for plugin_webm.dll:"
+            Get-ChildItem src\win32 -Recurse -Filter plugin_webm.dll -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty FullName
+            throw "plugin_webm.dll not found after build"
+          }
+          New-Item -ItemType Directory -Force -Path staging\win32-sim | Out-Null
+          Copy-Item $dll staging\win32-sim\plugin_webm.dll
+          Write-Host "Staged: staging\win32-sim\plugin_webm.dll"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win32-sim
+          path: staging/win32-sim/plugin_webm.dll
+          if-no-files-found: error
+
+  publish-release:
+    needs: build-win32
+    # Skip on manual runs (workflow_dispatch) so the Windows build can be tested
+    # without publishing. Real releases come from push / repository_dispatch.
+    if: ${{ github.event_name == 'push' || github.event_name == 'repository_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Inject the freshly built DLL into the plugins tree the action consumes.
+      - uses: actions/download-artifact@v4
+        with:
+          name: win32-sim
+          path: plugins/${{ env.PLUGIN_BUILD }}/win32-sim
+
+      - name: Show plugins tree to be published
+        run: |
+          echo "Publishing:"
+          find plugins -type f -not -name '.DS_Store' | sort
+
+      - uses: solar2d/directory-plugin-action@main
+        with:
+          pat: ${{ secrets.ISSUE_PAT }}

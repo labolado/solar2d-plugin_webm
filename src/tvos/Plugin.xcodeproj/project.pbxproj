@@ -1,0 +1,253 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BB00000000000000000000B1 /* WebMTextureBinding.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000000A1 /* WebMTextureBinding.cpp */; };
+		BB00000000000000000000B2 /* WebMDecoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000000A2 /* WebMDecoder.cpp */; };
+		BB00000000000000000000B3 /* plugin_webm.c in Sources */ = {isa = PBXBuildFile; fileRef = BB00000000000000000000A3 /* plugin_webm.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		BB00000000000000000000A1 /* WebMTextureBinding.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = WebMTextureBinding.cpp; path = ../shared/src/lua/WebMTextureBinding.cpp; sourceTree = SOURCE_ROOT; };
+		BB00000000000000000000A2 /* WebMDecoder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = WebMDecoder.cpp; path = ../shared/src/decoders/WebMDecoder.cpp; sourceTree = SOURCE_ROOT; };
+		BB00000000000000000000A3 /* plugin_webm.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = plugin_webm.c; path = ../shared/generated/plugin_webm.c; sourceTree = SOURCE_ROOT; };
+		BB00000000000000000000A0 /* Corona_plugin_webm.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Corona_plugin_webm.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BB00000000000000000000F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BB00000000000000000000C1 /* shared */ = {
+			isa = PBXGroup;
+			children = (
+				BB00000000000000000000A1 /* WebMTextureBinding.cpp */,
+				BB00000000000000000000A2 /* WebMDecoder.cpp */,
+				BB00000000000000000000A3 /* plugin_webm.c */,
+			);
+			name = shared;
+			sourceTree = "<group>";
+		};
+		BB00000000000000000000C0 /* mainGroup */ = {
+			isa = PBXGroup;
+			children = (
+				BB00000000000000000000C1 /* shared */,
+				BB00000000000000000000CF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BB00000000000000000000CF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BB00000000000000000000A0 /* Corona_plugin_webm.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BB00000000000000000000D0 /* Corona_plugin_webm */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB00000000000000000000EB /* Build configuration list for PBXNativeTarget "Corona_plugin_webm" */;
+			buildPhases = (
+				BB00000000000000000000E0 /* Sources */,
+				BB00000000000000000000F0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Corona_plugin_webm;
+			productName = Corona_plugin_webm;
+			productReference = BB00000000000000000000A0 /* Corona_plugin_webm.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BB00000000000000000000DF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = BB00000000000000000000EA /* Build configuration list for PBXProject "Plugin" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				en,
+				Base,
+			);
+			mainGroup = BB00000000000000000000C0 /* mainGroup */;
+			productRefGroup = BB00000000000000000000CF /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB00000000000000000000D0 /* Corona_plugin_webm */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BB00000000000000000000E0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB00000000000000000000B1 /* WebMTextureBinding.cpp in Sources */,
+				BB00000000000000000000B2 /* WebMDecoder.cpp in Sources */,
+				BB00000000000000000000B3 /* plugin_webm.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BB00000000000000000000EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_BITCODE = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = appletvos;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
+				TARGETED_DEVICE_FAMILY = 3;
+			};
+			name = Debug;
+		};
+		BB00000000000000000000ED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				COPY_PHASE_STRIP = YES;
+				ENABLE_BITCODE = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				ONLY_ACTIVE_ARCH = NO;
+				SDKROOT = appletvos;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BB00000000000000000000EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				CURRENT_PROJECT_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.coronalabs.Corona-plugin-webm";
+				PRODUCT_NAME = Corona_plugin_webm;
+				SKIP_INSTALL = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"${SRCROOT}/third_party_libs/device",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=appletvos*]" = "${SRCROOT}/third_party_libs/device";
+				"LIBRARY_SEARCH_PATHS[sdk=appletvsimulator*]" = "${SRCROOT}/third_party_libs/sim";
+				OTHER_LDFLAGS = "-lvpx -lwebm -lopus -undefined dynamic_lookup";
+				HEADER_SEARCH_PATHS = (
+					"${SRCROOT}/../shared/include",
+					"${SRCROOT}/../../third_party/libvpx",
+					"${SRCROOT}/../../third_party/libwebm",
+					"${SRCROOT}/../../third_party/opus/include",
+				);
+				USER_HEADER_SEARCH_PATHS = "${SRCROOT}/Native/Corona/shared/include/Corona ${SRCROOT}/Native/Corona/shared/include/lua";
+			};
+			name = Debug;
+		};
+		BB00000000000000000000EF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				CURRENT_PROJECT_VERSION = 1;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.coronalabs.Corona-plugin-webm";
+				PRODUCT_NAME = Corona_plugin_webm;
+				SKIP_INSTALL = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"${SRCROOT}/third_party_libs/device",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=appletvos*]" = "${SRCROOT}/third_party_libs/device";
+				"LIBRARY_SEARCH_PATHS[sdk=appletvsimulator*]" = "${SRCROOT}/third_party_libs/sim";
+				OTHER_LDFLAGS = "-lvpx -lwebm -lopus -undefined dynamic_lookup";
+				HEADER_SEARCH_PATHS = (
+					"${SRCROOT}/../shared/include",
+					"${SRCROOT}/../../third_party/libvpx",
+					"${SRCROOT}/../../third_party/libwebm",
+					"${SRCROOT}/../../third_party/opus/include",
+				);
+				USER_HEADER_SEARCH_PATHS = "${SRCROOT}/Native/Corona/shared/include/Corona ${SRCROOT}/Native/Corona/shared/include/lua";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BB00000000000000000000EA /* Build configuration list for PBXProject "Plugin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB00000000000000000000EC /* Debug */,
+				BB00000000000000000000ED /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB00000000000000000000EB /* Build configuration list for PBXNativeTarget "Corona_plugin_webm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB00000000000000000000EE /* Debug */,
+				BB00000000000000000000EF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BB00000000000000000000DF /* Project object */;
+}
