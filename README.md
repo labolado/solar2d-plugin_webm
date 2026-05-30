@@ -19,7 +19,7 @@ local webm_base = "https://github.com/zero-meta/solar2d-plugin-webm/releases/dow
 
 settings = {
     plugins = {
-        ["plugin.yoga"] = {
+        ["plugin.webm"] = {
             publisherId = "com.labolado",
             supportedPlatforms = {
                 ["mac-sim"]    = { url = webm_base .. "2025.3720-mac-sim.tgz" },

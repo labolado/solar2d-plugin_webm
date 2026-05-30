@@ -83,9 +83,13 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         with:
-          # Install to C:\msys64 so build_thrid_party_libs.ps1 finds bash there.
-          location: C:\
-          update: true
+          # Use the runner's PRE-INSTALLED MSYS2 at C:\msys64 (release: false)
+          # instead of installing a fresh copy. windows-2022 already ships MSYS2 at
+          # C:\msys64, so installing there again fails ("already exists, cannot
+          # continue"). build_thrid_party_libs.ps1 looks for bash at C:\msys64 —
+          # which is exactly this pre-installed instance — and we just add the
+          # packages libvpx's configure needs into it.
+          release: false
           install: >-
             make
             perl
