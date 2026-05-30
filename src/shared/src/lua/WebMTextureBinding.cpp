@@ -2,6 +2,16 @@
 // Integrates the WebM (VP8/VP9 + Opus) decoder with Solar2D's external texture
 // system, exposing a plugin.movie-compatible API (newMovieTexture).
 
+// Windows: Corona's luaconf.h does `#define _wsystem lua_wsystem` (to sandbox
+// Lua's os.execute). MSVC's <thread> later pulls in <process.h>, whose _wsystem
+// declaration would then macro-expand to lua_wsystem with CRT linkage and clash
+// with luaconf's declaration (error C2375). Include <process.h> up front so its
+// real declaration is seen before that macro exists; the include guard then makes
+// <thread>'s later include a no-op. No effect on non-Windows platforms.
+#ifdef _WIN32
+#include <process.h>
+#endif
+
 #include "CoronaLua.h"
 #include "CoronaMacros.h"
 #include "CoronaGraphics.h"

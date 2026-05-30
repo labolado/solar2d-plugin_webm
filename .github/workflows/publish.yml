@@ -121,14 +121,21 @@ jobs:
           $tp = "src\win32\third_party_libs"
           New-Item -ItemType Directory -Force -Path $tp | Out-Null
           if (Test-Path "$tp\OpenAL32.lib") { Write-Host "already present"; exit 0 }
-          $oal = Get-ChildItem "$env:CORONA_ROOT" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
+          # Search the whole Corona Labs install (Native\Corona\win\lib only ships
+          # CoronaLabs.Corona.Native.lib / lua.lib / pthreads.lib — none of which
+          # export the OpenAL al* symbols — but the Simulator dir might bundle a lib).
+          $coronaLabs = (Get-Item "$env:CORONA_ROOT").Parent.Parent.FullName
+          $oal = Get-ChildItem "$coronaLabs" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
                  Select-Object -First 1
           if ($oal) {
             Copy-Item $oal.FullName "$tp\OpenAL32.lib"
-            Write-Host "Copied OpenAL32.lib from SDK: $($oal.FullName)"
+            Write-Host "Copied OpenAL32.lib from Corona install: $($oal.FullName)"
             exit 0
           }
-          Write-Host "OpenAL32.lib not in SDK; falling back to vcpkg (x86)"
+          # Not shipped as a .lib (Corona ships OpenAL32.dll, used at RUNTIME). Pull
+          # an ABI-compatible import lib from vcpkg purely to satisfy the linker; the
+          # Simulator's own OpenAL32.dll resolves the symbols when the plugin loads.
+          Write-Host "OpenAL32.lib not in Corona install; falling back to vcpkg (x86)"
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install openal-soft:x86-windows
           $oal = Get-ChildItem "$env:VCPKG_INSTALLATION_ROOT\installed" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
                  Select-Object -First 1
