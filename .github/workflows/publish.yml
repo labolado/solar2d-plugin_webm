@@ -97,10 +97,20 @@ jobs:
             nasm
             yasm
 
-      - uses: microsoft/setup-msbuild@v2
+      # Full MSVC x86 environment (cl, msbuild, INCLUDE, LIB) for the whole job:
+      # libvpx's configure/make needs the toolchain *detectable* (otherwise it
+      # prints "Bypassing toolchain ..." and make can't build the generated
+      # vpx.sln), and the final Plugin.sln msbuild needs it too.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
 
       - name: Build third-party libs (opus, webm, vpx)
         shell: pwsh
+        env:
+          # Let the MSYS2 shell that build_thrid_party_libs.ps1 spawns inherit the
+          # Windows PATH, so libvpx's make finds msbuild / cl / yasm.
+          MSYS2_PATH_TYPE: inherit
         run: ./src/win32/build_thrid_party_libs.ps1
 
       - name: Ensure OpenAL32.lib is on the linker path
