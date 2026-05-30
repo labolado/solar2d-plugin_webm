@@ -426,6 +426,7 @@ paket-files/
 *.html
 
 # Other #
+!win32/libs/OpenAL32.lib
 .toolshim/
 **/*appletvos.tgz
 **/*iphone.tgz

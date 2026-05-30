@@ -7,9 +7,10 @@
 # only place it gets built — so it's built on every publish and injected into the
 # plugins/ tree the publish action consumes. The DLL is never committed.
 #
-# NOTE: the Windows build chain (Corona Native SDK install path, whether
-# OpenAL32.lib ships in the SDK, libvpx under MSYS2) is UNVERIFIED on a real
-# runner. The steps probe + fail loudly so the first few CI runs pinpoint what
+# NOTE: the Windows build chain (Corona Native SDK install path, libvpx under
+# MSYS2) is UNVERIFIED on a real runner. OpenAL32.lib is committed at
+# src/win32/libs/, so no download is needed for it. The steps probe + fail loudly
+# so the first few CI runs pinpoint what
 # needs tweaking. publish-release depends on build-win32, so a red Windows build
 # blocks the release (win32 is published *together* with the others, by design).
 
@@ -113,39 +114,18 @@ jobs:
           MSYS2_PATH_TYPE: inherit
         run: ./src/win32/build_thrid_party_libs.ps1
 
-      - name: Ensure OpenAL32.lib is on the linker path
-        shell: pwsh
-        run: |
-          # Plugin.vcxproj links OpenAL32.lib by bare name with
-          # AdditionalLibraryDirectories=third_party_libs, so put it there.
-          $tp = "src\win32\third_party_libs"
-          New-Item -ItemType Directory -Force -Path $tp | Out-Null
-          if (Test-Path "$tp\OpenAL32.lib") { Write-Host "already present"; exit 0 }
-          # Search the whole Corona Labs install (Native\Corona\win\lib only ships
-          # CoronaLabs.Corona.Native.lib / lua.lib / pthreads.lib — none of which
-          # export the OpenAL al* symbols — but the Simulator dir might bundle a lib).
-          $coronaLabs = (Get-Item "$env:CORONA_ROOT").Parent.Parent.FullName
-          $oal = Get-ChildItem "$coronaLabs" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
-                 Select-Object -First 1
-          if ($oal) {
-            Copy-Item $oal.FullName "$tp\OpenAL32.lib"
-            Write-Host "Copied OpenAL32.lib from Corona install: $($oal.FullName)"
-            exit 0
-          }
-          # Not shipped as a .lib (Corona ships OpenAL32.dll, used at RUNTIME). Pull
-          # an ABI-compatible import lib from vcpkg purely to satisfy the linker; the
-          # Simulator's own OpenAL32.dll resolves the symbols when the plugin loads.
-          Write-Host "OpenAL32.lib not in Corona install; falling back to vcpkg (x86)"
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install openal-soft:x86-windows
-          $oal = Get-ChildItem "$env:VCPKG_INSTALLATION_ROOT\installed" -Recurse -Filter OpenAL32.lib -ErrorAction SilentlyContinue |
-                 Select-Object -First 1
-          if (-not $oal) { throw "OpenAL32.lib not found in SDK or vcpkg" }
-          Copy-Item $oal.FullName "$tp\OpenAL32.lib"
-          Write-Host "Copied OpenAL32.lib from vcpkg: $($oal.FullName)"
+      # OpenAL32.lib: a prebuilt x86 import lib is committed at src/win32/libs/ and
+      # Plugin.vcxproj has `libs` on its AdditionalLibraryDirectories, so no
+      # download/vcpkg step is needed. (At runtime the Corona Simulator's own
+      # OpenAL32.dll resolves the al* symbols.)
 
       - name: Build plugin_webm.dll (msbuild, Release/Win32)
         shell: pwsh
-        run: msbuild src\win32\Plugin.sln /p:Configuration=Release /p:Platform=Win32 /m
+        # PostBuildEventUseInBuild=false disables the project's post-build xcopy,
+        # which deploys the DLL into the local Corona Simulator Plugins dir for dev
+        # convenience — pointless in CI, and its `xcopy /E` prompts interactively
+        # for a single file (F/D?), which hangs/fails on a non-interactive runner.
+        run: msbuild src\win32\Plugin.sln /p:Configuration=Release /p:Platform=Win32 /m /p:PostBuildEventUseInBuild=false
 
       - name: Stage win32-sim artifact
         shell: pwsh
