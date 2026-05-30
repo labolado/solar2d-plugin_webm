@@ -10,6 +10,14 @@
 #
 set -o errexit
 
+# A static archive stores each member's mtime plus a timestamp in its __.SYMDEF
+# table of contents, so libtool — both ours below and xcodebuild's own static-lib
+# step — emits a byte-different .a every run even when the compiled objects are
+# identical. That's why the committed libplugin_webm.a shows a git diff after every
+# build. ZERO_AR_DATE=1 makes Apple's libtool/ar zero those timestamps, producing a
+# reproducible archive (verified: two builds of unchanged sources are now identical).
+export ZERO_AR_DATE=1
+
 path=$(dirname "$0")
 pushd "$path" > /dev/null; path=$(pwd); popd > /dev/null
 

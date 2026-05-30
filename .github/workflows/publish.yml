@@ -1,6 +1,8 @@
 # Builds the win32 plugin (plugin_webm.dll) fresh on a Windows runner, then
 # publishes it together with the already-committed platform binaries under
-# plugins/** via the official solar2d/directory-plugin-action.
+# plugins/**. The publish step replicates solar2d/directory-plugin-action's
+# packaging INLINE (not by calling the action) — see the publish-release job for
+# why (the action re-checks-out and would wipe the injected, uncommitted DLL).
 #
 # Why build win32 here instead of committing a prebuilt DLL: the plugin is
 # authored on macOS, so the Windows binary can't be produced locally. CI is the
@@ -150,24 +152,62 @@ jobs:
 
   publish-release:
     needs: build-win32
-    # Skip on manual runs (workflow_dispatch) so the Windows build can be tested
-    # without publishing. Real releases come from push / repository_dispatch.
-    if: ${{ github.event_name == 'push' || github.event_name == 'repository_dispatch' }}
+    # Skip manual runs (workflow_dispatch) so the Windows build can be iterated
+    # without publishing, and only release from the default branch (same guard
+    # solar2d/directory-plugin-action applies internally).
+    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name == 'push' || github.event_name == 'repository_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Inject the freshly built DLL into the plugins tree the action consumes.
+      # Inject the freshly built win32 DLL into the plugins tree.
       - uses: actions/download-artifact@v4
         with:
           name: win32-sim
           path: plugins/${{ env.PLUGIN_BUILD }}/win32-sim
 
       - name: Show plugins tree to be published
-        run: |
-          echo "Publishing:"
-          find plugins -type f -not -name '.DS_Store' | sort
+        run: find plugins -type f -not -name '.DS_Store' | sort
 
-      - uses: solar2d/directory-plugin-action@main
+      # Replicate solar2d/directory-plugin-action's packaging INLINE. We cannot
+      # call the action: its first step is its own `actions/checkout`, which wipes
+      # the injected (uncommitted) win32 DLL from the workspace before tarring, so
+      # win32 would never be published. Same tar as the action.
+      - name: Package each platform into <build>-<platform>.tgz
+        run: |
+          cd plugins
+          for build in */; do
+            build="${build%/}"
+            ( cd "$build"
+              for platform in */; do
+                platform="${platform%/}"
+                ( cd "$platform"
+                  ls * >/dev/null 2>&1 || exit 0
+                  tar -czvf ../../"$build-$platform.tgz" --exclude=".*" *
+                )
+              done
+            )
+          done
+          echo "Produced:"; ls -la *.tgz
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
         with:
-          pat: ${{ secrets.ISSUE_PAT }}
+          files: plugins/*.tgz
+          name: Release v${{ github.run_number }}
+          tag_name: v${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Ask the Solar2D plugin directory to refresh (same dispatch the action does).
+      - name: Request Solar2D directory update
+        shell: bash
+        env:
+          ISSUE_PAT: ${{ secrets.ISSUE_PAT }}
+        run: |
+          if [ -z "$ISSUE_PAT" ]; then echo "No ISSUE_PAT secret; skipping directory update."; exit 0; fi
+          curl --request POST \
+            --url https://api.github.com/repos/solar2d/plugins.solar2d.com/dispatches \
+            --header "authorization: Bearer $ISSUE_PAT" \
+            --header 'content-type: application/json' \
+            --data "{\"event_type\":\"repo_updated\",\"client_payload\":{\"repo\":\"${{ github.repository }}\"}}"
