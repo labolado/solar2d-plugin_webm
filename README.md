@@ -15,7 +15,7 @@ Add the plugin to `build.settings`:
 
 ```lua
 -- Change "v1" to the latest release tag
-local webm_base = "https://github.com/zero-meta/solar2d-plugin-webm/releases/download/v1/"
+local webm_base = "https://github.com/labolado/solar2d-plugin_webm/releases/download/v1/"
 
 settings = {
     plugins = {
