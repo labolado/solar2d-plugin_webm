@@ -1,0 +1,32 @@
+local webm_base = "https://github.com/labolado/solar2d-plugin_webm/releases/download/v1/"
+
+settings =
+{
+    orientation =
+    {
+        default = "portrait",
+        supported = { "portrait", "portraitUpsideDown" }
+    },
+
+    excludeFiles =
+    {
+        all = { ".DS_Store", "*.bak", "*.psd", ".git", ".gitignore", ".cache", "*.md" },
+    },
+
+    plugins =
+    {
+        ["plugin.webm"] =
+        {
+            publisherId = "com.labolado",
+            supportedPlatforms =
+            {
+                ["mac-sim"]    = { url = webm_base .. "2025.3720-mac-sim.tgz" },
+                ["android"]    = { url = webm_base .. "2025.3720-android.tgz" },
+                ["iphone"]     = { url = webm_base .. "2025.3720-iphone.tgz" },
+                ["iphone-sim"] = { url = webm_base .. "2025.3720-iphone-sim.tgz" },
+                ["win32-sim"]  = { url = webm_base .. "2025.3720-win32-sim.tgz" },
+                ["appletvos"]  = { url = webm_base .. "2025.3720-appletvos.tgz" },
+            }
+        },
+    }
+}
