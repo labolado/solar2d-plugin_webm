@@ -267,31 +267,31 @@ bool WebMDecoder::loadFromFile(const char* path, bool initVideoDecoder) {
     return true;
 }
 
-// Populate video_frame + backing buffers from a PendingFrame in the queue.
-static void popPendingFrame(Impl* d) {
-    Impl::PendingFrame& pf = d->frame_queue.front();
-    d->y_buf = std::move(pf.y);
-    d->u_buf = std::move(pf.u);
-    d->v_buf = std::move(pf.v);
-    d->video_frame.y_plane   = d->y_buf.data();
-    d->video_frame.u_plane   = d->u_buf.data();
-    d->video_frame.v_plane   = d->v_buf.data();
-    d->video_frame.width     = pf.w;
-    d->video_frame.height    = pf.h;
-    d->video_frame.y_stride  = pf.ys;
-    d->video_frame.uv_stride = pf.us;
-    d->video_frame.timestamp = pf.ts;
-    d->has_video = true;
-    d->frame_queue.pop_front();
-}
-
 void WebMDecoder::decodeNextVideoFrame() {
     Impl* d = impl_;
     if (d->has_video || !d->vpx_inited) return;
 
+    // Helper lambda: move the front of frame_queue into video_frame + backing bufs.
+    auto popFrame = [d]() {
+        Impl::PendingFrame& pf = d->frame_queue.front();
+        d->y_buf = std::move(pf.y);
+        d->u_buf = std::move(pf.u);
+        d->v_buf = std::move(pf.v);
+        d->video_frame.y_plane   = d->y_buf.data();
+        d->video_frame.u_plane   = d->u_buf.data();
+        d->video_frame.v_plane   = d->v_buf.data();
+        d->video_frame.width     = pf.w;
+        d->video_frame.height    = pf.h;
+        d->video_frame.y_stride  = pf.ys;
+        d->video_frame.uv_stride = pf.us;
+        d->video_frame.timestamp = pf.ts;
+        d->has_video = true;
+        d->frame_queue.pop_front();
+    };
+
     // Serve any frames buffered from a previous decode call first.
     if (!d->frame_queue.empty()) {
-        popPendingFrame(d);
+        popFrame();
         return;
     }
 
@@ -326,7 +326,7 @@ void WebMDecoder::decodeNextVideoFrame() {
         }
 
         if (!d->frame_queue.empty()) {
-            popPendingFrame(d);
+            popFrame();
             return;
         }
     }
