@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <string>
 #include <thread>
 
@@ -64,6 +65,15 @@ struct WebMDecoder::Impl {
     // video decode.
     std::vector<uint8_t> y_buf, u_buf, v_buf;
     std::vector<uint8_t> pkt;
+
+    // Queue of frames emitted by a single vpx_codec_decode call (frame-parallel
+    // VP9 can produce multiple frames per packet). Served FIFO by decodeNextVideoFrame.
+    struct PendingFrame {
+        std::vector<uint8_t> y, u, v;
+        int w = 0, h = 0, ys = 0, us = 0;
+        double ts = 0.0;
+    };
+    std::deque<PendingFrame> frame_queue;
     std::vector<int16_t> opus_tmp; // reused opus decode scratch (avoid per-frame alloc)
 
     ~Impl() {
@@ -138,8 +148,15 @@ struct WebMDecoder::Impl {
                         c.frame++;
                         bool last = (c.frame >= fc);
 
-                        buf.resize(f.len > 0 ? f.len : 0);
-                        bool ok = (f.len > 0) && (f.Read(&reader, buf.data()) >= 0);
+                        if (f.len <= 0 || f.len > (16 << 20)) {
+                            // Skip malformed or oversized frames (> 16 MiB).
+                            // A legitimate 4K VP9 keyframe is well under 2 MiB;
+                            // skipping silently is safer than a potential OOM crash.
+                            if (last) stepEntry(c);
+                            continue;
+                        }
+                        buf.resize((size_t)f.len);
+                        bool ok = (f.Read(&reader, buf.data()) >= 0);
                         tsec = b->GetTime(c.cluster) / 1000000000.0;
 
                         if (last) stepEntry(c);
@@ -250,9 +267,33 @@ bool WebMDecoder::loadFromFile(const char* path, bool initVideoDecoder) {
     return true;
 }
 
+// Populate video_frame + backing buffers from a PendingFrame in the queue.
+static void popPendingFrame(Impl* d) {
+    Impl::PendingFrame& pf = d->frame_queue.front();
+    d->y_buf = std::move(pf.y);
+    d->u_buf = std::move(pf.u);
+    d->v_buf = std::move(pf.v);
+    d->video_frame.y_plane   = d->y_buf.data();
+    d->video_frame.u_plane   = d->u_buf.data();
+    d->video_frame.v_plane   = d->v_buf.data();
+    d->video_frame.width     = pf.w;
+    d->video_frame.height    = pf.h;
+    d->video_frame.y_stride  = pf.ys;
+    d->video_frame.uv_stride = pf.us;
+    d->video_frame.timestamp = pf.ts;
+    d->has_video = true;
+    d->frame_queue.pop_front();
+}
+
 void WebMDecoder::decodeNextVideoFrame() {
     Impl* d = impl_;
     if (d->has_video || !d->vpx_inited) return;
+
+    // Serve any frames buffered from a previous decode call first.
+    if (!d->frame_queue.empty()) {
+        popPendingFrame(d);
+        return;
+    }
 
     // VP9 may consume several packets before emitting a frame.
     for (int guard = 0; guard < 64; ++guard) {
@@ -266,31 +307,28 @@ void WebMDecoder::decodeNextVideoFrame() {
             continue;
         }
 
+        // Drain all frames emitted by this decode call (frame-parallel VP9 can
+        // emit more than one image per vpx_codec_decode invocation).
         vpx_codec_iter_t it = nullptr;
-        vpx_image_t* img = vpx_codec_get_frame(&d->vpx_ctx, &it);
-        if (!img) continue;
+        vpx_image_t* img;
+        while ((img = vpx_codec_get_frame(&d->vpx_ctx, &it)) != nullptr) {
+            const int w  = (int)img->d_w;
+            const int h  = (int)img->d_h;
+            const int ys = img->stride[VPX_PLANE_Y];
+            const int us = img->stride[VPX_PLANE_U];
+            const int ch = (h + 1) / 2;
+            Impl::PendingFrame pf;
+            pf.y.assign(img->planes[VPX_PLANE_Y], img->planes[VPX_PLANE_Y] + (size_t)ys * h);
+            pf.u.assign(img->planes[VPX_PLANE_U], img->planes[VPX_PLANE_U] + (size_t)us * ch);
+            pf.v.assign(img->planes[VPX_PLANE_V], img->planes[VPX_PLANE_V] + (size_t)us * ch);
+            pf.w = w; pf.h = h; pf.ys = ys; pf.us = us; pf.ts = ts;
+            d->frame_queue.push_back(std::move(pf));
+        }
 
-        const int w = (int)img->d_w;
-        const int h = (int)img->d_h;
-        const int ys = img->stride[VPX_PLANE_Y];
-        const int us = img->stride[VPX_PLANE_U];
-        const int vs = img->stride[VPX_PLANE_V];
-        const int ch = (h + 1) / 2;
-
-        d->y_buf.assign(img->planes[VPX_PLANE_Y], img->planes[VPX_PLANE_Y] + (size_t)ys * h);
-        d->u_buf.assign(img->planes[VPX_PLANE_U], img->planes[VPX_PLANE_U] + (size_t)us * ch);
-        d->v_buf.assign(img->planes[VPX_PLANE_V], img->planes[VPX_PLANE_V] + (size_t)vs * ch);
-
-        d->video_frame.y_plane = d->y_buf.data();
-        d->video_frame.u_plane = d->u_buf.data();
-        d->video_frame.v_plane = d->v_buf.data();
-        d->video_frame.width = w;
-        d->video_frame.height = h;
-        d->video_frame.y_stride = ys;
-        d->video_frame.uv_stride = us;
-        d->video_frame.timestamp = ts;
-        d->has_video = true;
-        return;
+        if (!d->frame_queue.empty()) {
+            popPendingFrame(d);
+            return;
+        }
     }
 }
 
@@ -354,6 +392,7 @@ bool WebMDecoder::replay() {
     d->acur = Cursor();
     d->has_video = false;
     d->has_audio = false;
+    d->frame_queue.clear();
 
     // The vpx context retains reference frames from the previous playthrough.
     // Rewinding the cursors alone leaves that state stale, so the picture
@@ -410,6 +449,7 @@ bool WebMDecoder::seekTo(double t, std::atomic<bool>* abort) {
     d->vcur.started = true;
     d->vcur.cluster = vcl;
     d->vcur.be = vbe;
+    d->frame_queue.clear();
 
     // Position the audio cursor near the target. Opus packets are independently
     // decodable, so starting at the cluster boundary closest to t is sufficient;
@@ -457,3 +497,4 @@ bool WebMDecoder::isPlaybackFinished() {
 }
 
 } // namespace webm
+

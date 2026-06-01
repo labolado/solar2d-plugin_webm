@@ -438,6 +438,7 @@ void stopAudioStream(WebMMovieTexture *movie) {
     alSourceRewind(movie->source);
     alSourcei(movie->source, AL_BUFFER, 0);
     alDeleteBuffers(NUM_BUFFERS, movie->buffers);
+    for (int i = 0; i < NUM_BUFFERS; ++i) movie->buffers[i] = 0;
 }
 
 // Texture callback implementations
@@ -543,7 +544,8 @@ int newMovieTexture(lua_State *L) {
     if(!movie->decoder->loadFromFile(path, /*initVideoDecoder=*/false)) {
         delete movie;
         lua_pushnil(L);
-        return 1;
+        lua_pushfstring(L, "plugin.webm: failed to open '%s'", path ? path : "(nil)");
+        return 2;
     }
 
     // Decide the output (texture) size from the *track header* (no frame decode
@@ -637,6 +639,7 @@ int newMovieTexture(lua_State *L) {
 // Texture methods - matches plugin_movie logic.
 static int update(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
 
     PLUGIN_WEBM_LOG( ("Update called - playing: %s, decoder: %s, stopped: %s\n",
            movie->playing ? "true" : "false",
@@ -801,6 +804,7 @@ static int update(lua_State *L) {
 
 static int play(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
 
     if(!movie->playing) {
         movie->playing = true;
@@ -820,6 +824,7 @@ static int play(lua_State *L) {
 
 static int pause(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
 
     if(movie->playing) {
         movie->playing = false;
@@ -833,6 +838,7 @@ static int pause(lua_State *L) {
 
 static int stop(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
 
     movie->stopped = true;
     movie->playing = false;
@@ -863,6 +869,7 @@ static int stop(lua_State *L) {
 
 static int replay(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
 
     PLUGIN_WEBM_LOG( ("Lua replay called\n") );
 
@@ -918,6 +925,7 @@ static int replay(lua_State *L) {
 // replay()'s worker/audio lifecycle, but repositions to t instead of the start.
 static int seek(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
 
     if (!movie->decoder) {
         lua_pushboolean(L, false);
@@ -1037,6 +1045,7 @@ static int currentTime(lua_State *L, void *context) {
 // volume APIs don't reach it.
 static int setVolume(lua_State *L) {
     WebMMovieTexture *movie = (WebMMovieTexture*)CoronaExternalGetUserData(L, 1);
+    if (!movie) return 0;
     double v = luaL_checknumber(L, 2);
     if (v < 0.0) v = 0.0;
     movie->volume = (float)v;
@@ -1072,3 +1081,4 @@ CORONA_EXPORT int luaopen_plugin_webm(lua_State *L) {
 
     return result;
 }
+

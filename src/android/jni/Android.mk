@@ -71,14 +71,13 @@ LOCAL_CFLAGS := \
     -DNDEBUG \
     -D_REENTRANT \
     -DRtt_ANDROID_ENV \
-    -ffast-math \
-    -Ofast \
+    -O3 \
     -fPIC \
     -DPIC
 
 LOCAL_CPPFLAGS := -fexceptions -fPIC -std=c++14
 
-LOCAL_LDLIBS := -s
+LOCAL_LDFLAGS += -Wl,-s
 
 # Export only luaopen_plugin_webm; localize all other symbols (incl. the static
 # libc++ and libvpx/libwebm/opus) so they can't be interposed by the engine.
@@ -105,3 +104,4 @@ endif
 
 LOCAL_ARM_MODE := arm
 include $(BUILD_SHARED_LIBRARY)
+
