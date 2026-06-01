@@ -1,11 +1,11 @@
-local webm_base = "https://github.com/labolado/solar2d-plugin_webm/releases/download/v1/"
+local webm_base = "https://github.com/labolado/solar2d-plugin_webm/releases/download/v2/"
 
 settings =
 {
     orientation =
     {
         default = "portrait",
-        supported = { "portrait", "portraitUpsideDown" }
+        supported = { "portrait", "portraitUpsideDown", "landscapeLeft", "landscapeRight" }
     },
 
     excludeFiles =
