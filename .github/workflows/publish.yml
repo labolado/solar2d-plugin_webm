@@ -102,7 +102,7 @@ jobs:
       - name: Build third-party libs
         env:
           ANDROID_NDK: ${{ steps.ndk.outputs.ndk-path }}
-        run: cd src/android && bash -x build_thrid_party_libs.sh 2>&1
+        run: cd src/android && bash build_thrid_party_libs.sh
 
       - name: Build plugin .so + tgz
         env:

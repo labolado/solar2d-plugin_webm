@@ -69,12 +69,8 @@ build_cmake_lib() {
 build_vpx() {
     local abi="$1" target="$2" triple="$3"
     local cc="${TOOLBIN}/${triple}${API}-clang"
-    # ARM .asm assembles via clang's integrated assembler (NDK r24+ dropped GAS);
-    # x86 SIMD .asm needs a real x86 assembler (nasm) — clang can't take -f elf32.
+    # SIMD ASM disabled via --disable-runtime-cpu-detect, so clang works for all ABIs.
     local as_tool="${cc}"
-    case "${abi}" in
-        x86|x86_64) as_tool="$(command -v nasm)" ;;
-    esac
     local bdir="${libvpx_dir}/build_android_${abi}"
     rm -rf "${bdir}"; mkdir -p "${bdir}"
     pushd "${bdir}" > /dev/null
