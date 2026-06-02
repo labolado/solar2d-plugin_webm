@@ -118,8 +118,6 @@ copy_file() {
 
 copy_file arm64-v8a
 copy_file armeabi-v7a
-copy_file x86
-copy_file x86_64
 cp $path/metadata.lua ${dst_dir}/metadata.lua
 cp ${path}/jniLibs/armeabi-v7a/${lib_name} ${dst_dir}/${lib_name}
 
