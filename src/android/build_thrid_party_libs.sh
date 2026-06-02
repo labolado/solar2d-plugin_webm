@@ -30,11 +30,14 @@ fi
 API=21
 CPU_CORES=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
-case "$(uname -m)" in
-    arm64) HOST_TAG=darwin-arm64 ;;
-    *)     HOST_TAG=darwin-x86_64 ;;
-esac
+# NDK ships only darwin-x86_64 toolchain binaries (runs via Rosetta on arm64 macOS)
+HOST_TAG=darwin-x86_64
 TOOLBIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/${HOST_TAG}/bin"
+# If darwin-x86_64 not found (native arm64 NDK), try darwin-arm64
+if [ ! -d "${TOOLBIN}" ]; then
+    HOST_TAG=darwin-arm64
+    TOOLBIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/${HOST_TAG}/bin"
+fi
 echo "NDK: ${ANDROID_NDK}"
 
 # libvpx's x86 configure probes nasm section alignment via a bare `readelf`,
