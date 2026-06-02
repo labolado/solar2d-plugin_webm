@@ -80,8 +80,14 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Install build tools
-        run: brew install nasm
+      - name: Download Corona.aar
+        run: |
+          curl -sL -o /tmp/CoronaCards-Android.zip \
+            "https://github.com/coronalabs/corona/releases/download/3720/CoronaCards-Android-2025.3720.zip"
+          unzip -q /tmp/CoronaCards-Android.zip -d /tmp/CoronaCards-Android
+          mkdir -p /Applications/CoronaEnterprise/Corona/android/lib/gradle
+          find /tmp/CoronaCards-Android -name "Corona.aar" -exec cp {} /Applications/CoronaEnterprise/Corona/android/lib/gradle/ \;
+          ls -lh /Applications/CoronaEnterprise/Corona/android/lib/gradle/Corona.aar
 
       - name: Setup Android NDK
         id: ndk

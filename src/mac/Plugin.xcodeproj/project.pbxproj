@@ -200,6 +200,8 @@
 				HEADER_SEARCH_PATHS = (
 					"${SRCROOT}/Native/Corona/shared/include/Corona",
 					"${SRCROOT}/Native/Corona/shared/include/lua",
+					"${SRCROOT}/../native-sdk/include/Corona",
+					"${SRCROOT}/../native-sdk/include/lua",
 					"${SRCROOT}/../shared/include",
 					"${SRCROOT}/../../third_party/libvpx",
 					"${SRCROOT}/../../third_party/libwebm",
@@ -226,6 +228,8 @@
 				HEADER_SEARCH_PATHS = (
 					"${SRCROOT}/Native/Corona/shared/include/Corona",
 					"${SRCROOT}/Native/Corona/shared/include/lua",
+					"${SRCROOT}/../native-sdk/include/Corona",
+					"${SRCROOT}/../native-sdk/include/lua",
 					"${SRCROOT}/../shared/include",
 					"${SRCROOT}/../../third_party/libvpx",
 					"${SRCROOT}/../../third_party/libwebm",

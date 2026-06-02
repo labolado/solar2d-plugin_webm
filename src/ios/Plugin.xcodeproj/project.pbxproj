@@ -173,7 +173,7 @@
 				);
 				PRODUCT_NAME = plugin_webm;
 				SKIP_INSTALL = YES;
-				USER_HEADER_SEARCH_PATHS = "${SRCROOT}/Native/Corona/shared/include/Corona ${SRCROOT}/Native/Corona/shared/include/lua";
+				USER_HEADER_SEARCH_PATHS = "${SRCROOT}/Native/Corona/shared/include/Corona ${SRCROOT}/Native/Corona/shared/include/lua ${SRCROOT}/../native-sdk/include/Corona ${SRCROOT}/../native-sdk/include/lua";
 			};
 			name = Debug;
 		};
@@ -189,7 +189,7 @@
 				);
 				PRODUCT_NAME = plugin_webm;
 				SKIP_INSTALL = YES;
-				USER_HEADER_SEARCH_PATHS = "${SRCROOT}/Native/Corona/shared/include/Corona ${SRCROOT}/Native/Corona/shared/include/lua";
+				USER_HEADER_SEARCH_PATHS = "${SRCROOT}/Native/Corona/shared/include/Corona ${SRCROOT}/Native/Corona/shared/include/lua ${SRCROOT}/../native-sdk/include/Corona ${SRCROOT}/../native-sdk/include/lua";
 			};
 			name = Release;
 		};
