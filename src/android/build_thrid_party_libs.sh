@@ -104,12 +104,11 @@ while read -r abi vpxtarget triple; do
 done <<'EOF'
 armeabi-v7a armv7-android-gcc  armv7a-linux-androideabi
 arm64-v8a   arm64-android-gcc  aarch64-linux-android
-x86         x86-android-gcc    i686-linux-android
 x86_64      x86_64-android-gcc x86_64-linux-android
 EOF
 
 echo "=== results ==="
-for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+for abi in armeabi-v7a arm64-v8a x86_64; do
     echo "${abi}:"; ls -la "${jni_dir}/${abi}"/*.a 2>&1
 done
 echo "Build third party libs done."
