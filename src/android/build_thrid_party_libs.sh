@@ -72,6 +72,10 @@ build_vpx() {
     local bdir="${libvpx_dir}/build_android_${abi}"
     rm -rf "${bdir}"; mkdir -p "${bdir}"
     pushd "${bdir}" > /dev/null
+    local extra_flags=""
+    case "${abi}" in
+        x86_64) extra_flags="--disable-avx512 --disable-avx2 --disable-avx --disable-sse4_2 --disable-sse4_1 --disable-ssse3 --disable-sse3 --disable-sse2 --disable-mmx" ;;
+    esac
     CC="${cc}" \
     CXX="${TOOLBIN}/${triple}${API}-clang++" \
     AS="${as_tool}" \
@@ -80,10 +84,6 @@ build_vpx() {
     NM="${TOOLBIN}/llvm-nm" \
     STRIP="${TOOLBIN}/llvm-strip" \
     RANLIB="${TOOLBIN}/llvm-ranlib" \
-    local extra_flags=""
-    case "${abi}" in
-        x86_64) extra_flags="--disable-avx512 --disable-avx2 --disable-avx --disable-sse4_2 --disable-sse4_1 --disable-ssse3 --disable-sse3 --disable-sse2 --disable-mmx" ;;
-    esac
     "${libvpx_dir}/configure" \
         --target="${target}" \
         --disable-examples --disable-tools --disable-docs --disable-unit-tests \
