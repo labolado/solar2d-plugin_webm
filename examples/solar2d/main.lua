@@ -1,10 +1,5 @@
--- FTL Game Loop detection
-if gameLoopScenario then
-    print("[PASS] Game Loop scenario " .. tostring(gameLoopScenario) .. " started")
-    timer.performWithDelay(80000, function() os.exit(0) end) -- run 80s then exit
-end
-
 display.setStatusBar(display.HiddenStatusBar)
+
 local webm = require("plugin.webm")
 
 local W, H   = display.contentWidth, display.contentHeight
@@ -52,10 +47,7 @@ makeBtn("Pause", 3, {0.6,0.6,0.1}, function() if movie then movie:pause(); statu
 makeBtn("Stop",  4, {0.7,0.15,0.15}, function() if movie then movie:stop(); movie=nil; statusText.text="stopped" end end)
 makeBtn("[ ]",   5, {0.25,0.25,0.6}, function()
     isFullscreen = not isFullscreen
-    local w = isFullscreen and FW or NW
-    local h = isFullscreen and FH or NH
-    local y = isFullscreen and CY or NY
-    newMovie(w, h, y)
+    newMovie(isFullscreen and FW or NW, isFullscreen and FH or NH, isFullscreen and CY or NY)
     controls.isVisible = not isFullscreen
     fpsText.isVisible = not isFullscreen
 end)
