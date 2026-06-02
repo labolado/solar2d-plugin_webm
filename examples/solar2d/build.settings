@@ -13,6 +13,17 @@ settings =
         all = { ".DS_Store", "*.bak", "*.psd", ".git", ".gitignore", ".cache", "*.md" },
     },
 
+    iphone = {
+        plist = {
+            CFBundleURLTypes = {
+                {
+                    CFBundleURLName = "com.labolado.test.WebmTest",
+                    CFBundleURLSchemes = { "firebase-game-loop" },
+                },
+            },
+        },
+    },
+
     plugins =
     {
         ["plugin.webm"] =
