@@ -37,7 +37,7 @@ jobs:
         run: cd src/mac && bash build_third_party_libs.sh
 
       - name: Build plugin_webm.dylib
-        run: cd src/mac && bash build.sh /tmp/mac-out
+        run: mkdir -p /tmp/mac-out && cd src/mac && bash build.sh /tmp/mac-out
 
       - uses: actions/upload-artifact@v4
         with:
