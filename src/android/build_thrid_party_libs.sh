@@ -86,7 +86,8 @@ build_vpx() {
         --disable-webm-io --disable-libyuv --disable-postproc \
         --enable-vp8 --enable-vp9 \
         --disable-vp8-encoder --disable-vp9-encoder \
-        --enable-static --disable-shared --enable-pic
+        --enable-static --disable-shared --enable-pic \
+        --disable-runtime-cpu-detect
     make -j"${CPU_CORES}"
     popd > /dev/null
     cp "${bdir}/libvpx.a" "${jni_dir}/${abi}/libvpx.a"
