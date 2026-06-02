@@ -37,7 +37,10 @@ jobs:
         run: cd src/mac && bash build_third_party_libs.sh
 
       - name: Build plugin_webm.dylib
-        run: mkdir -p /tmp/mac-out && cd src/mac && bash build.sh /tmp/mac-out
+        run: |
+          mkdir -p /tmp/mac-out
+          mkdir -p "$HOME/Library/Application Support/Corona/Simulator/Plugins"
+          cd src/mac && bash build.sh /tmp/mac-out
 
       - uses: actions/upload-artifact@v4
         with:
@@ -84,9 +87,10 @@ jobs:
         run: |
           curl -sL -o /tmp/CoronaCards-Android.zip \
             "https://github.com/coronalabs/corona/releases/download/3720/CoronaCards-Android-2025.3720.zip"
-          unzip -q /tmp/CoronaCards-Android.zip -d /tmp/CoronaCards-Android
           mkdir -p /Applications/CoronaEnterprise/Corona/android/lib/gradle
-          find /tmp/CoronaCards-Android -name "Corona.aar" -exec cp {} /Applications/CoronaEnterprise/Corona/android/lib/gradle/ \;
+          unzip -q /tmp/CoronaCards-Android.zip "CoronaCards.aar" -d /tmp/CoronaCards-Android
+          cp /tmp/CoronaCards-Android/CoronaCards.aar \
+             /Applications/CoronaEnterprise/Corona/android/lib/gradle/Corona.aar
           ls -lh /Applications/CoronaEnterprise/Corona/android/lib/gradle/Corona.aar
 
       - name: Setup Android NDK
