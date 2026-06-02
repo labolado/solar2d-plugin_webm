@@ -80,6 +80,10 @@ build_vpx() {
     NM="${TOOLBIN}/llvm-nm" \
     STRIP="${TOOLBIN}/llvm-strip" \
     RANLIB="${TOOLBIN}/llvm-ranlib" \
+    local extra_flags=""
+    case "${abi}" in
+        x86_64) extra_flags="--disable-avx512 --disable-avx2 --disable-avx --disable-sse4_2 --disable-sse4_1 --disable-ssse3 --disable-sse3 --disable-sse2 --disable-mmx" ;;
+    esac
     "${libvpx_dir}/configure" \
         --target="${target}" \
         --disable-examples --disable-tools --disable-docs --disable-unit-tests \
@@ -87,7 +91,8 @@ build_vpx() {
         --enable-vp8 --enable-vp9 \
         --disable-vp8-encoder --disable-vp9-encoder \
         --enable-static --disable-shared --enable-pic \
-        --disable-runtime-cpu-detect
+        --disable-runtime-cpu-detect \
+        ${extra_flags}
     make -j"${CPU_CORES}"
     popd > /dev/null
     cp "${bdir}/libvpx.a" "${jni_dir}/${abi}/libvpx.a"
@@ -105,7 +110,7 @@ while read -r abi vpxtarget triple; do
 done <<'EOF'
 armeabi-v7a armv7-android-gcc    armv7a-linux-androideabi
 arm64-v8a   arm64-android-gcc    aarch64-linux-android
-x86_64      generic-gnu          x86_64-linux-android
+x86_64      x86_64-android-gcc   x86_64-linux-android
 EOF
 
 echo "=== results ==="
