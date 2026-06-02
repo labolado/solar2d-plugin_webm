@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Install build tools
         run: brew install nasm
@@ -51,6 +52,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Install build tools
         run: brew install nasm
@@ -76,6 +78,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Install build tools
         run: brew install nasm
@@ -113,6 +116,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Download + install Solar2D (Corona Native SDK)
         shell: pwsh
