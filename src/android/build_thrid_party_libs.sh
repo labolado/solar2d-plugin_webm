@@ -30,7 +30,10 @@ fi
 API=21
 CPU_CORES=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
-HOST_TAG=darwin-x86_64
+case "$(uname -m)" in
+    arm64) HOST_TAG=darwin-arm64 ;;
+    *)     HOST_TAG=darwin-x86_64 ;;
+esac
 TOOLBIN="${ANDROID_NDK}/toolchains/llvm/prebuilt/${HOST_TAG}/bin"
 echo "NDK: ${ANDROID_NDK}"
 
