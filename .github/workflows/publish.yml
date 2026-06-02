@@ -1,32 +1,16 @@
-# Builds the win32 plugin (plugin_webm.dll) fresh on a Windows runner, then
-# publishes it together with the already-committed platform binaries under
-# plugins/**. The publish step replicates solar2d/directory-plugin-action's
-# packaging INLINE (not by calling the action) — see the publish-release job for
-# why (the action re-checks-out and would wipe the injected, uncommitted DLL).
-#
-# Why build win32 here instead of committing a prebuilt DLL: the plugin is
-# authored on macOS, so the Windows binary can't be produced locally. CI is the
-# only place it gets built — so it's built on every publish and injected into the
-# plugins/ tree the publish action consumes. The DLL is never committed.
-#
-# NOTE: the Windows build chain (Corona Native SDK install path, libvpx under
-# MSYS2) is UNVERIFIED on a real runner. OpenAL32.lib is committed at
-# src/win32/libs/, so no download is needed for it. The steps probe + fail loudly
-# so the first few CI runs pinpoint what
-# needs tweaking. publish-release depends on build-win32, so a red Windows build
-# blocks the release (win32 is published *together* with the others, by design).
+# Builds all platform plugins from source on CI, then publishes them as a GitHub
+# release. macOS/iOS/Android now compile on macOS runners; win32 stays on Windows.
+# No prebuilt binaries are committed — the publish-release job collects everything
+# from artifacts injected into the plugins/ tree.
 
 name: publish
 
-# Release is cut only on the deliberate signals below (push to plugins/** etc.).
-# A manual "Run workflow" (workflow_dispatch) builds win32 only and skips the
-# publish job — so the unverified Windows build can be iterated without cutting
-# a release every time (publish-release is gated on the event type).
 on:
   push:
     paths:
       - 'plugins/**'
       - 'docs/**'
+      - 'src/**'
   repository_dispatch:
   workflow_dispatch:
 
@@ -34,17 +18,88 @@ permissions:
   contents: write
 
 env:
-  # Corona/Solar2D build whose Native SDK we build + link against. Matches the
-  # plugins/<YEAR.BUILD>/ folder so the ABI lines up. Bump together with that
-  # folder if you retarget a newer Solar2D build.
-  SOLAR2D_YEAR: '2025'
-  SOLAR2D_BUILD: '3720'
-  # The committed plugins folder for this build (plugins/<PLUGIN_BUILD>/...).
   PLUGIN_BUILD: '2025.3720'
 
 jobs:
+  # ── macOS dylib ───────────────────────────────────────────────────────────
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build third-party libs
+        run: cd src/mac && bash build_third_party_libs.sh
+
+      - name: Build plugin_webm.dylib
+        run: cd src/mac && bash build.sh /tmp/mac-out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-sim
+          path: /tmp/mac-out/plugin_webm.dylib
+          if-no-files-found: error
+
+  # ── iOS device + simulator static libs ────────────────────────────────────
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build third-party libs
+        run: cd src/ios && bash build_thrid_party_libs.sh
+
+      - name: Build plugin .a + tgz
+        run: cd src/ios && bash build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-binaries
+          path: |
+            plugins/${{ env.PLUGIN_BUILD }}/iphone/
+            plugins/${{ env.PLUGIN_BUILD }}/iphone-sim/
+          if-no-files-found: error
+
+  # ── Android .so ───────────────────────────────────────────────────────────
+  build-android:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+
+      - name: Build third-party libs
+        env:
+          ANDROID_NDK: ${{ steps.ndk.outputs.ndk-path }}
+        run: cd src/android && bash build_thrid_party_libs.sh
+
+      - name: Build plugin .so + tgz
+        env:
+          ANDROID_NDK: ${{ steps.ndk.outputs.ndk-path }}
+        run: cd src/android && bash build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-binaries
+          path: |
+            plugins/${{ env.PLUGIN_BUILD }}/android/
+          if-no-files-found: error
+
+  # ── Windows DLL ──────────────────────────────────────────────────────────
   build-win32:
     runs-on: windows-2022
+    env:
+      SOLAR2D_YEAR: '2025'
+      SOLAR2D_BUILD: '3720'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,9 +119,6 @@ jobs:
       - name: Locate Native SDK and export CORONA_ROOT
         shell: pwsh
         run: |
-          # The .vcxproj references $(CORONA_ROOT)\Corona\win\lib and
-          # $(CORONA_ROOT)\Corona\shared\include, so CORONA_ROOT is the directory
-          # that *contains* the `Corona` folder. Find it by locating win\lib.
           $roots = @('C:\Program Files (x86)','C:\Program Files')
           $lib = Get-ChildItem $roots -Recurse -Directory -ErrorAction SilentlyContinue |
                  Where-Object { $_.FullName -match '\\Corona\\win\\lib$' } |
@@ -77,33 +129,16 @@ jobs:
               Select-Object -ExpandProperty FullName
             throw "Corona Native SDK win\lib not found after install"
           }
-          # ...\<ROOT>\Corona\win\lib  ->  <ROOT>
           $root = $lib.Parent.Parent.Parent.FullName
           Write-Host "CORONA_ROOT=$root"
           "CORONA_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "win\lib contents:"
-          Get-ChildItem "$root\Corona\win\lib" | Select-Object -ExpandProperty Name
 
       - uses: msys2/setup-msys2@v2
         with:
-          # Use the runner's PRE-INSTALLED MSYS2 at C:\msys64 (release: false)
-          # instead of installing a fresh copy. windows-2022 already ships MSYS2 at
-          # C:\msys64, so installing there again fails ("already exists, cannot
-          # continue"). build_thrid_party_libs.ps1 looks for bash at C:\msys64 —
-          # which is exactly this pre-installed instance — and we just add the
-          # packages libvpx's configure needs into it.
           release: false
           install: >-
-            make
-            perl
-            diffutils
-            nasm
-            yasm
+            make perl diffutils nasm yasm
 
-      # Full MSVC x86 environment (cl, msbuild, INCLUDE, LIB) for the whole job:
-      # libvpx's configure/make needs the toolchain *detectable* (otherwise it
-      # prints "Bypassing toolchain ..." and make can't build the generated
-      # vpx.sln), and the final Plugin.sln msbuild needs it too.
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
@@ -111,22 +146,11 @@ jobs:
       - name: Build third-party libs (opus, webm, vpx)
         shell: pwsh
         env:
-          # Let the MSYS2 shell that build_thrid_party_libs.ps1 spawns inherit the
-          # Windows PATH, so libvpx's make finds msbuild / cl / yasm.
           MSYS2_PATH_TYPE: inherit
         run: ./src/win32/build_thrid_party_libs.ps1
 
-      # OpenAL32.lib: a prebuilt x86 import lib is committed at src/win32/libs/ and
-      # Plugin.vcxproj has `libs` on its AdditionalLibraryDirectories, so no
-      # download/vcpkg step is needed. (At runtime the Corona Simulator's own
-      # OpenAL32.dll resolves the al* symbols.)
-
       - name: Build plugin_webm.dll (msbuild, Release/Win32)
         shell: pwsh
-        # PostBuildEventUseInBuild=false disables the project's post-build xcopy,
-        # which deploys the DLL into the local Corona Simulator Plugins dir for dev
-        # convenience — pointless in CI, and its `xcopy /E` prompts interactively
-        # for a single file (F/D?), which hangs/fails on a non-interactive runner.
         run: msbuild src\win32\Plugin.sln /p:Configuration=Release /p:Platform=Win32 /m /p:PostBuildEventUseInBuild=false
 
       - name: Stage win32-sim artifact
@@ -142,7 +166,6 @@ jobs:
           }
           New-Item -ItemType Directory -Force -Path staging\win32-sim | Out-Null
           Copy-Item $dll staging\win32-sim\plugin_webm.dll
-          Write-Host "Staged: staging\win32-sim\plugin_webm.dll"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -150,17 +173,30 @@ jobs:
           path: staging/win32-sim/plugin_webm.dll
           if-no-files-found: error
 
+  # ── Publish Release ──────────────────────────────────────────────────────
   publish-release:
-    needs: build-win32
-    # Skip manual runs (workflow_dispatch) so the Windows build can be iterated
-    # without publishing, and only release from the default branch (same guard
-    # solar2d/directory-plugin-action applies internally).
+    needs: [build-macos, build-ios, build-android, build-win32]
     if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name == 'push' || github.event_name == 'repository_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Inject the freshly built win32 DLL into the plugins tree.
+      # Inject freshly built binaries into plugins/ tree
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-sim
+          path: plugins/${{ env.PLUGIN_BUILD }}/mac-sim
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-binaries
+          path: plugins/${{ env.PLUGIN_BUILD }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-binaries
+          path: plugins/${{ env.PLUGIN_BUILD }}
+
       - uses: actions/download-artifact@v4
         with:
           name: win32-sim
@@ -169,10 +205,6 @@ jobs:
       - name: Show plugins tree to be published
         run: find plugins -type f -not -name '.DS_Store' | sort
 
-      # Replicate solar2d/directory-plugin-action's packaging INLINE. We cannot
-      # call the action: its first step is its own `actions/checkout`, which wipes
-      # the injected (uncommitted) win32 DLL from the workspace before tarring, so
-      # win32 would never be published. Same tar as the action.
       - name: Package each platform into <build>-<platform>.tgz
         run: |
           cd plugins
@@ -199,7 +231,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      # Ask the Solar2D plugin directory to refresh (same dispatch the action does).
       - name: Request Solar2D directory update
         shell: bash
         env:
