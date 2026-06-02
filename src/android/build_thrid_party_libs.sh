@@ -103,9 +103,9 @@ while read -r abi vpxtarget triple; do
         -DENABLE_WEBMTS=OFF -DENABLE_WEBMINFO=OFF -DENABLE_TESTS=OFF -DENABLE_SAMPLE_PROGRAMS=OFF
     build_vpx "${abi}" "${vpxtarget}" "${triple}"
 done <<'EOF'
-armeabi-v7a armv7-android-gcc  armv7a-linux-androideabi
-arm64-v8a   arm64-android-gcc  aarch64-linux-android
-x86_64      x86_64-android-gcc x86_64-linux-android
+armeabi-v7a armv7-android-gcc    armv7a-linux-androideabi
+arm64-v8a   arm64-android-gcc    aarch64-linux-android
+x86_64      generic-gnu          x86_64-linux-android
 EOF
 
 echo "=== results ==="
