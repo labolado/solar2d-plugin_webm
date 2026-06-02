@@ -3,8 +3,8 @@ LOCAL_PATH := $(call my-dir)
 CORONA_NATIVE := /Applications/CoronaEnterprise
 CORONA_ROOT := $(CORONA_NATIVE)/Corona
 # Use committed headers so CI doesn't need CoronaEnterprise installed
-LUA_API_DIR := $(LOCAL_PATH)/../../../native-sdk/include/lua
-LUA_API_CORONA := $(LOCAL_PATH)/../../../native-sdk/include/Corona
+LUA_API_DIR := $(LOCAL_PATH)/../../native-sdk/include/lua
+LUA_API_CORONA := $(LOCAL_PATH)/../../native-sdk/include/Corona
 
 SRC_DIR := ../../shared
 THIRD_PARTY := $(SRC_DIR)/../../third_party
