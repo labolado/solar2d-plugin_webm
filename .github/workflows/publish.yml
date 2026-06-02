@@ -29,6 +29,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install build tools
+        run: brew install nasm
+
       - name: Build third-party libs
         run: cd src/mac && bash build_third_party_libs.sh
 
@@ -48,6 +51,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Install build tools
+        run: brew install nasm
 
       - name: Build third-party libs
         run: cd src/ios && bash build_thrid_party_libs.sh
@@ -70,6 +76,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Install build tools
+        run: brew install nasm
 
       - name: Setup Android NDK
         id: ndk
