@@ -103,10 +103,8 @@ echo Done.
 dst_dir=$path/../../plugins/2025.3720/android
 lib_name=libplugin.${TARGET_NAME}.so
 
-mkdir -p ${dst_dir}
+mkdir -p ${dst_dir}/jniLibs/armeabi-v7a
+mkdir -p ${dst_dir}/jniLibs/arm64-v8a
 cp $path/metadata.lua ${dst_dir}/metadata.lua
-cp ${path}/jniLibs/armeabi-v7a/${lib_name} ${dst_dir}/${lib_name}
-
-echo Packing binaries...
-tar -czvf data.tgz -C $path jniLibs -C $path/jniLibs/armeabi-v7a ${lib_name} -C $path metadata.lua
-echo $path/data.tgz.
+cp ${path}/jniLibs/armeabi-v7a/${lib_name} ${dst_dir}/jniLibs/armeabi-v7a/${lib_name}
+cp ${path}/jniLibs/arm64-v8a/${lib_name}   ${dst_dir}/jniLibs/arm64-v8a/${lib_name}

@@ -249,8 +249,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: plugins/*.tgz
-          name: Release v3
-          tag_name: v3
+          name: Release v4
+          tag_name: v4
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

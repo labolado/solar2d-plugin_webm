@@ -1,4 +1,4 @@
-local webm_base = "https://github.com/labolado/solar2d-plugin_webm/releases/download/v3/"
+local webm_base = "https://github.com/labolado/solar2d-plugin_webm/releases/download/v4/"
 
 settings =
 {
