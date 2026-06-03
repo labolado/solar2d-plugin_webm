@@ -103,21 +103,7 @@ echo Done.
 dst_dir=$path/../../plugins/2025.3720/android
 lib_name=libplugin.${TARGET_NAME}.so
 
-copy_file() {
-	if [ ! -d ${dst_dir} ]
-	then
-		mkdir -p ${dst_dir}
-	fi
-	local_dst_dir=${dst_dir}/jniLibs/${1}
-	if [ ! -d ${local_dst_dir} ]
-	then
-		mkdir -p ${local_dst_dir}
-	fi
-	cp ${path}/jniLibs/${1}/${lib_name} ${local_dst_dir}/${lib_name}
-}
-
-copy_file arm64-v8a
-copy_file armeabi-v7a
+mkdir -p ${dst_dir}
 cp $path/metadata.lua ${dst_dir}/metadata.lua
 cp ${path}/jniLibs/armeabi-v7a/${lib_name} ${dst_dir}/${lib_name}
 
